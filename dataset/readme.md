@@ -1,5 +1,6 @@
 ## Overview
 The data is provided by Udacity as a part of Explore and Summarize Data.
+
 This data set contains 113,937 loans with 81 variables on each loan, including loan amount, borrower rate (or interest rate), current loan status, borrower income, borrower employment status, borrower credit history, and the latest payment information.
 
 
@@ -27,14 +28,24 @@ The length of the loan expressed in months.
 
 **LoanStatus**
 
-The current status of the loan: Cancelled,  Chargedoff, Completed, Current, Defaulted, FinalPaymentInProgress, PastDue. The PastDue status will be accompanied by a delinquency bucket.
+The current status of the loan:
+
+* Cancelled
+* Charged off
+* Completed
+* Current
+* Defaulted
+* FinalPaymentInProgress
+* PastDue.
+
+The PastDue status will be accompanied by a delinquency bucket.
 
 **ClosedDate**
 
-Closed date is applicable for Cancelled, Completed, Chargedoff and Defaulted loan statuses. 
+Closed date is applicable for Cancelled, Completed, Charged off and Defaulted loan statuses. 
 
 **BorrowerAPR**
-
+		
 The Borrower's Annual Percentage Rate (APR) for the loan.
 
 **BorrowerRate**
@@ -59,7 +70,18 @@ The estimated return assigned to the listing at the time it was created. Estimat
 
 **ProsperRating (numeric)**
 
-The  Prosper Rating assigned at the time the listing was created: 0 - N/A, 1 - HR, 2 - E, 3 - D, 4 - C, 5 - B, 6 - A, 7 - AA.  Applicable for loans originated after July 2009.
+The  Prosper Rating assigned at the time the listing was created:
+
+* 0 - N/A
+* 1 - HR
+* 2 - E
+* 3 - D
+* 4 - C
+* 5 - B
+* 6 - A
+* 7 - AA
+
+Applicable for loans originated after July 2009.
 
 **ProsperRating (Alpha)**
 
@@ -71,7 +93,29 @@ A custom risk score built using historical Prosper data. The score ranges from 1
 
 **ListingCategory**
 
-The category of the listing that the borrower selected when posting their listing: 0 - Not Available, 1 - Debt Consolidation, 2 - Home Improvement, 3 - Business, 4 - Personal Loan, 5 - Student Use, 6 - Auto, 7- Other, 8 - Baby&Adoption, 9 - Boat, 10 - Cosmetic Procedure, 11 - Engagement Ring, 12 - Green Loans, 13 - Household Expenses, 14 - Large Purchases, 15 - Medical/Dental, 16 - Motorcycle, 17 - RV, 18 - Taxes, 19 - Vacation, 20 - Wedding Loans
+The category of the listing that the borrower selected when posting their listing: 
+
+* 0 - Not Available
+* 1 - Debt Consolidation
+* 2 - Home Improvement
+* 3 - Business
+* 4 - Personal Loan
+* 5 - Student Use
+* 6 - Auto
+* 7- Other
+* 8 - Baby&Adoption
+* 9 - Boat
+* 10 - Cosmetic Procedure
+* 11 - Engagement Ring
+* 12 - Green Loans
+* 13 - Household Expenses
+* 14 - Large Purchases
+* 15 - Medical/Dental
+* 16 - Motorcycle
+* 17 - RV
+* 18 - Taxes
+* 19 - Vacation
+* 20 - Wedding Loans
 
 **BorrowerState**
 
