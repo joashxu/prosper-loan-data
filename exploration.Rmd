@@ -14,6 +14,7 @@ library(dplyr)
 library(tidyr)
 library(MASS)
 library(scales)
+library(GGally)
 
 require(grid)
 ```
@@ -56,7 +57,14 @@ df <- cbind(df, prosper[, c("DebtToIncomeRatio", "BankcardUtilization",
 
 # Length of credit history 
 today <- Sys.Date()
-df$DaysWithCreditLine <- as.numeric(floor(difftime(today, as.Date(prosper$FirstRecordedCreditLine, "%Y-%m-%d %H:%M:%S"))))
+df$DaysWithCreditLine <- as.numeric(
+  floor(
+    difftime(today,
+             as.Date(prosper$FirstRecordedCreditLine,
+                     "%Y-%m-%d %H:%M:%S")
+            )
+    )
+  )
 
 # Recent searches
 df$InquiriesLast6Months <- prosper$InquiriesLast6Months 
@@ -101,95 +109,164 @@ summary(df)
 
 ### Loan amount
 ```{r echo=FALSE, Loan_amount}
-lim <- quantile(na.omit(df$LoanOriginalAmount), 0.99);
-  
-ggplot(aes(x = LoanOriginalAmount), data = na.omit(df)) +
+lim <- quantile(df$LoanOriginalAmount, 0.99, na.rm = TRUE);
+
+ggplot(aes(x = LoanOriginalAmount), data = df) +
   geom_histogram(binwidth=1000) +
   scale_x_continuous(
-    limits=c(0, lim),
-    breaks=seq(0, lim, 1000)) +
+    limits = c(0, lim),
+    breaks = seq(0, lim, 1000)) +
   theme(axis.text.x = element_text(angle = 45, hjust = 1))
 ```
 
-Several sharp line on the amount, no surprise here, people tend to borrow in whole numbers. Interesting to note that 4000 is the most common amount people borrowed, followed by 10000 and 15000.
+Several sharp line on the amount, no surprise here, people tend to borrow in whole numbers. 
+Let's take a look at the statistic a bit.
+
+```{r echo=FALSE}
+summary(df$LoanOriginalAmount)
+```
+
+The minimum loan is 1000, with the median of 6500 and mean of 8337.
+
+Let's see the most common loan amount.
+
+```{r echo=FALSE}
+Mode <- function(x) {
+  ux <- unique(x)
+  ux[which.max(tabulate(match(x, ux)))]
+}
+
+Mode(df$LoanOriginalAmount)
+```
+
+Interesting to note that 4000 is the most common amount people borrowed, followed by 10000 and 15000.
+
+The maximum loan requested is 35000. Let's see how many listing asked for that much.
+
+```{r echo=FALSE}
+nrow(subset(df, LoanOriginalAmount == 35000))
+```
+
+Not many, only 430 out all of the observation.
 
 ### Loan category
 ```{r echo=FALSE, Loan_category}
-ggplot(aes(x = ListingCategory), data = na.omit(df)) +
+ggplot(aes(x = ListingCategory), data = df) +
   geom_bar() +
   theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
+summary(df$ListingCategory)
 ```
 
-Most people borrow to consolidate their debts.
+Most people borrow to consolidate their debts, in total there are 58308 case or about 
+51.17%.
 
 ### Employment Status
 ```{r echo=FALSE, Employment_status}
-ggplot(aes(x = EmploymentStatus), data = na.omit(df)) +
+ggplot(aes(x = EmploymentStatus), data = df) +
   geom_bar() +
   theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
+summary(df$EmploymentStatus)
 ```
 
-Most borrowers are employed. 
+Most borrowers are employed. There are 67322 employed borrowers or about 59%.
 
 ### Annual Income
 ```{r echo=FALSE, Annual_income}
-lim <- quantile(na.omit(df$AnnualIncome), 0.99);
-ggplot(aes(x = AnnualIncome), data = na.omit(df)) +
-  geom_histogram(binwidth=1000) +
+lim <- quantile(df$AnnualIncome, 0.99, na.rm = TRUE);
+ggplot(aes(x = AnnualIncome), data = df) +
+  geom_histogram(binwidth = 1000) +
     scale_x_continuous(
-    limits=c(0, lim),
-    breaks=seq(0, lim, 5000)) +
+      limits = c(0, lim),
+      breaks = seq(0, lim, 10000)) +
   theme(axis.text.x = element_text(angle = 45, hjust = 1))
 ```
 
-At binwidth=1000, we can see sharp line around some amount, which make sense, since user tend to input a whole number. The histogram is skewed to the left.
+At binwidth=1000, we can see sharp line around some amount, which make sense, since user tend to input a whole number. The histogram is skewed to the left. 
+
+Another look at larger binwidth.
+
+```{r echo=FALSE, Annual_income_larger_binwidth}
+ggplot(aes(x = AnnualIncome), data = df) +
+  geom_histogram(binwidth=5000) +
+    scale_x_continuous(
+    limits = c(0, lim),
+    breaks = seq(0, lim, 10000)) +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+```
+
+```{r echo=FALSE}
+summary(df$AnnualIncome)
+```
+
+The median for AnnualIncome is 56000, the mean is 67300.
+The maximum entry is 21 million (1750000 per month).
 
 ## Credit profile
 
 ### Payment history
 
 ```{r echo=FALSE, Payment_History}
-lim <- quantile(na.omit(df$DelinquenciesLast7Years), 0.99);
+lim <- quantile(df$DelinquenciesLast7Years, 0.99, na.rm = TRUE);
 plot1 <- ggplot(aes(x = DelinquenciesLast7Years), data = df) +
-  geom_histogram(binwidth=1) +
+  geom_histogram(binwidth = 1) +
   scale_x_continuous(
-    limits=c(0, lim),
-    breaks=seq(0, lim, 1)) +
-  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+    limits = c(0, lim),
+    breaks = seq(0, lim, 1)) +
+  theme(axis.text.x = element_text(angle = 90, hjust = 1))
 
-lim <- quantile(na.omit(df$PublicRecordsLast10Years), 0.99);
+lim <- quantile(df$PublicRecordsLast10Years, 0.99, na.rm = TRUE);
 plot2 <- ggplot(aes(x = PublicRecordsLast10Years), data = df) +
-  geom_histogram(binwidth=1) +
+  geom_histogram(binwidth = 1) +
   scale_x_continuous(
-    limits=c(0, lim),
-    breaks=seq(0, lim, 1)) 
+    limits = c(0, lim),
+    breaks = seq(0, lim, 1)) 
 
-grid.arrange(plot1, plot2, nrow=2)
+grid.arrange(plot1, plot2, nrow = 2)
 ```
 
 Most borrower have no deliquencies in the last 7 years or public records in the last 10 years.
 If I remove the borrower with 0 deliquencies and 0 public records. I got:
 
 ```{r echo=FALSE, Payment_History2}
-lim <- quantile(na.omit(df$DelinquenciesLast7Years), 0.99);
+lim <- quantile(df$DelinquenciesLast7Years, 0.99, na.rm = TRUE);
 plot1 <- ggplot(aes(x = DelinquenciesLast7Years), data = df) +
   geom_histogram(binwidth=1) +
   scale_x_continuous(
-    limits=c(1, lim),
-    breaks=seq(1, lim, 1)) +
-  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+    limits = c(1, lim),
+    breaks = seq(1, lim, 1)) +
+  theme(axis.text.x = element_text(angle = 90, hjust = 1))
 
-lim <- quantile(na.omit(df$PublicRecordsLast10Years), 0.99);
+lim <- quantile(df$PublicRecordsLast10Years, 0.99, na.rm = TRUE);
 plot2 <- ggplot(aes(x = PublicRecordsLast10Years), data = df) +
-  geom_histogram(binwidth=1) +
+  geom_histogram(binwidth = 1) +
   scale_x_continuous(
-    limits=c(1, lim),
-    breaks=seq(1, lim, 1)) 
+    limits = c(1, lim),
+    breaks = seq(1, lim, 1)) 
 
-grid.arrange(plot1, plot2, nrow=2)
+grid.arrange(plot1, plot2, nrow = 2)
 ```
 
-While most borrowers has 0 deliquencies, there still almost 4000 borrowers who have at least 1 deliquencies in the last 7 years and 2000 borrowers have at least 1 public records in the last 10 years.
+Let's take a look at the statistics for DelinquenciesLast7Years.
+
+``` {r echo = FALSE}
+summary(df$DelinquenciesLast7Years)
+table(df$DelinquenciesLast7Years)
+```
+
+While most borrowers has 0 deliquencies, there are still 3967 borrowers who have at least 1 deliquencies in the last 7 years. And there are also 110 borrowers that have 99 (maximum ) Deliquencies in the last 7 years.
+
+And the statistics for PublicRecordsLast10Years.
+
+``` {r echo = FALSE}
+summary(df$PublicRecordsLast10Years)
+table(df$PublicRecordsLast10Years)
+```
+
+While most borrowers has 0 public records for the last 10 years,
+there are 22834 borrowers have at least 1 public records in the last 10 years.
+The maximum public records is 38.
 
 ### Debt burden
 
@@ -200,45 +277,74 @@ A debt income ratio is the percentage of a consumer's monthly gross income that 
 Removing the upper quantile on the data we got:
 
 ```{r echo=FALSE, Debt_Burden}
-lim <- quantile(na.omit(df$DebtToIncomeRatio), 0.99);
-ggplot(aes(x = DebtToIncomeRatio), data = na.omit(df)) +
-  geom_histogram(binwidth=0.05) +
+lim <- quantile(df$DebtToIncomeRatio, 0.99, na.rm = TRUE);
+ggplot(aes(x = DebtToIncomeRatio), data = df) +
+  geom_histogram(binwidth = 0.05) +
   scale_x_continuous(
-    limits=c(0, lim),
-    breaks=seq(0, lim, 0.05)) +
+    limits = c(0, lim),
+    breaks = seq(0, lim, 0.05)) +
   theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
+summary(df$DebtToIncomeRatio)
 ```
+
+The maximum is 10.01. This is specified in the data definition, debt to income ratio is always capped to 10.01 (1001%). The minimum value is 0. With the median of 0.22 and mean of 0.276.  
+
 
 **Revolving Credit Balance**
 
 Revolving Credit Balance is the total outstanding balance that the borrower owes on open credit cards or other revolving credit accounts.
 
 ```{r echo=FALSE}
-lim <- quantile(na.omit(df$RevolvingCreditBalance), 0.99);
-ggplot(aes(x = RevolvingCreditBalance), data = na.omit(df)) +
-  geom_histogram(binwidth=5000) +
+lim <- quantile(df$RevolvingCreditBalance, 0.99, na.rm = TRUE);
+ggplot(aes(x = RevolvingCreditBalance), data = df) +
+  geom_histogram(binwidth = 5000) +
   scale_x_continuous(
-    limits=c(0, lim),
-    breaks=seq(0, lim, 5000)) +
+    limits = c(0, lim),
+    breaks = seq(0, lim, 5000)) +
   theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
+summary(df$RevolvingCreditBalance)
 ```
+
+The median is 8549 and mean 17600. The maximum value is 1436000.
+The minimum and the most common amount is 0.
 
 **Bankcard Utilization**
 
 Bankcard utilization is the sum of the balances owed on open bankcards divided by the sum of the card's credit limits. Lower usually means better.
 
 ```{r echo=FALSE}
-lim <- quantile(na.omit(df$BankcardUtilization), 0.99);
-ggplot(aes(x = BankcardUtilization), data = na.omit(df)) +
-  geom_histogram(binwidth=0.05) +
+lim <- quantile(df$BankcardUtilization, 0.99, na.rm = TRUE);
+ggplot(aes(x = BankcardUtilization), data = df) +
+  geom_histogram(binwidth = 0.05) +
   scale_x_continuous(
-    limits=c(0, 2),
-    breaks=seq(0, 2, 0.05)) +
+    limits = c(0, 2),
+    breaks = seq(0, 2, 0.05)) +
   theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
+summary(df$BankcardUtilization)
 ```
 
 There are interestingly 2 peaks in the plot, first there are a lot of borrowers who have almost 0% Bankcard Utilization and then another peak near 100%.
 There are some borrowers who have utilization > 1.00 (100%).
+
+Number of borrowers with BankcardUtilization < 0.05:
+``` {r echo=FALSE}
+nrow(subset(df, BankcardUtilization < 0.05))
+```
+
+Number of borrowers near 1:
+``` {r echo=FALSE}
+nrow(subset(df, BankcardUtilization >= 0.95 & BankcardUtilization < 1))
+```
+
+Number of borrowers with BankcardUtilization >= 1:
+``` {r echo=FALSE}
+nrow(subset(df, BankcardUtilization >= 1))
+```
+There are 2574 borrowers who has bankcard utilization > 1.
+That means they owed more then the credit limit.
 
 
 ### Length of credit history
@@ -251,6 +357,8 @@ plot1 <- qplot(x = DaysWithCreditLine, data = df, binwidth = 30)
 plot2 <- qplot(x = DaysWithCreditLine / 365, data = df, binwidth = 1, label="Years with credit line")
 
 grid.arrange(plot1, plot2)
+
+summary(df$DaysWithCreditLine)
 ```
 
 There is a credit line going up to 60 years.
@@ -259,20 +367,29 @@ There is a credit line going up to 60 years.
 
 ```{r echo=FALSE}
 qplot(x = ProsperRating, data = df)
+
+summary(df$ProsperRating)
 ```
 
+The most common rating (excluding the NA's) is rating C, 18345.
+Only 5372 listing have AA rating or about 4.71%.
 
 ```{r echo=FALSE}
 qplot(x = Term, data = df)
+
+summary(df$Term)
 ```
 
-Most loans have 36 months term.
+Most loans have 36 months term or about 77%.
 
 ```{r echo=FALSE}
 qplot(x = BorrowerRate * 100, data = df, binwidth = 1)
+
+summary(df$BorrowerRate)
 ```
 
 The median for the borrower rate is 18.4% and mean 19.28%.
+The maximum borrower rate is 0.4975 or 49.75%.
 There are 6 observation that has more then 40% borrower rate.
 
 # Univariate Analysis
@@ -313,34 +430,89 @@ All of the money related variables (LoanOriginalAmoun, RevolvingCreditBalance an
 ---
 
 # Bivariate Plots Section
-```{r echo=FALSE, message=FALSE, warning=FALSE, Bivariate_Plots}
-# Loan amount and category
+
+Let's see the relationship between LoanOriginalAmount with ListingCategory.
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
 ggplot(aes(x = ListingCategory, y = LoanOriginalAmount), data = df) +
   geom_boxplot() +
-  scale_y_log10() +
+  scale_y_continuous(limits = c(0, quantile(df$LoanOriginalAmount, 0.99, na.rm = TRUE))) +
   theme(axis.text.x = element_text(angle = 45, hjust = 1))
-
-# Employment status and loan amount
-ggplot(aes(x = EmploymentStatus, y = LoanOriginalAmount), data = na.omit(df)) +
-  geom_boxplot() +
-  scale_y_log10() +
-  theme(axis.text.x = element_text(angle = 45, hjust = 1))
-
-# Annual income and employment
-ggplot(aes(x = EmploymentStatus, y = AnnualIncome), data = na.omit(df)) +
-  geom_boxplot() +
-  scale_y_log10() +
-  theme(axis.text.x = element_text(angle = 45, hjust = 1))
-
-ggplot(aes(x = LoanOriginalAmount, y = AnnualIncome), data = df) +
-  geom_point(alpha = 0.05, position = "jitter") +
-  scale_y_continuous(
-    limits = c(0, quantile(df$AnnualIncome, 0.99)))
 ```
 
-People who borrow > 25000 has annual income of >= 100000
+The baby and adoption loans looks similar to debt consolodation. Let's take a look at the statistics.
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+summary(subset(df, ListingCategory == 'Debt consolidation')$LoanOriginalAmount)
+summary(subset(df, ListingCategory == 'Baby & Adoption Loans')$LoanOriginalAmount)
+```
+
+The top one is debt consolidation summary and the bottom one is baby and adoption loans.
+Very close but not similar.
+
+Interesting to note that wedding loans is quite high. Let's take a look at the numbers.
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+summary(subset(df, ListingCategory == 'Wedding Loans')$LoanOriginalAmount)
+```
+
+The median and mean are 7500 and 8836, with maximum value up to 35000. 
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+# Employment status and loan amount
+ggplot(aes(x = EmploymentStatus, y = LoanOriginalAmount), data = df) +
+  geom_boxplot() +
+  scale_y_continuous(limits = c(0, quantile(df$LoanOriginalAmount, 0.99, na.rm = TRUE))) +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+```
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+summary(subset(df, EmploymentStatus == 'Not employed')$LoanOriginalAmount)
+summary(subset(df, EmploymentStatus == 'Part-time')$LoanOriginalAmount)
+```
+
+Interesting to see that not employed is requesting loan higher then part time.
+The median and the mean of not employed borrower are 4000 and 4873 vs 3000 and 4089 from part time borrower. Both max loans are 25000.
+
+Now let's look at the relationship between LoanOriginalAmount with AnnualIncome.
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+ggplot(aes(x = LoanOriginalAmount, y = AnnualIncome), data = df) +
+  geom_point(alpha = 0.05) + 
+  stat_quantile() +
+  scale_y_continuous(
+    limits = c(0, quantile(df$AnnualIncome, 0.99, na.rm = TRUE)))
+```
+
+Most of the Loan are below 10000 and annual income is under 100000.
+The quantile shows that the higher the annual income the higher the median of the loan original amount.
+
+The number of the data that have original amount < 10000 and annual income less then 100000 is:
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+nrow(subset(df, LoanOriginalAmount < 10000 & AnnualIncome < 100000))
+```
+which is around 57.53% of the data.
+
+It seems that people who borrow > 25000 has annual income of >= 100000
 looks like there some kind of rule, that if you borrow > 25000 the the minimal
 annual income is 100000.
+
+Let's verify this a bit.
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+summary(subset(df, LoanOriginalAmount > 25000)$AnnualIncome)
+```
+
+And yes the minimum annual income is 100000.
+Let's also check the correlation between the 2 variables.
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+cor(df$AnnualIncome, df$LoanOriginalAmount)
+```
+
+This indicate weak positive relationship. 
+
+Now let's check the DebtToIncomeRatio with BorrowerRate.
 
 ``` {r echo=FALSE, message=FALSE, warning=FALSE}
 ggplot(aes(x = DebtToIncomeRatio, y = BorrowerRate), data = df) +
@@ -349,7 +521,19 @@ ggplot(aes(x = DebtToIncomeRatio, y = BorrowerRate), data = df) +
   scale_y_continuous(limits = c(0, quantile(df$BorrowerRate, 0.99, na.rm = TRUE)))
 ```
 
-That is not too informative. Let's try too break the DebtToIncomeRatio into several bins.
+That is not too informative. Let's add some quantile information.
+
+``` {r echo=FALSE, message=FALSE, warning=FALSE}
+ggplot(aes(x = DebtToIncomeRatio, y = BorrowerRate), data = df) +
+  geom_point(alpha = 0.05, position = "jitter") +
+  stat_quantile() +
+  scale_x_continuous(limits = c(0, quantile(df$DebtToIncomeRatio, 0.99, na.rm = TRUE))) +
+  scale_y_continuous(limits = c(0, quantile(df$BorrowerRate, 0.99, na.rm = TRUE)))
+```
+
+The median of the borrower rate gets higher as the debt to income ratio gets higher as well.
+
+Another way to look at this is by breaking the DebtToIncomeRatio into several bins.
 
 ``` {r echo=FALSE, message=FALSE, warning=FALSE}
 df$DebtToIncomeRatio.bin <- with(df, cut(as.numeric(DebtToIncomeRatio), 
@@ -371,15 +555,23 @@ qplot(x = DebtToIncomeRatio.bin, data = na.omit(df))
 Let's have another look at the relationship between DebtToIncomeRatio with BorrowerRate.
 
 ``` {r echo=FALSE, message=FALSE, warning=FALSE}
-ggplot(aes(x = DebtToIncomeRatio.bin, y = BorrowerRate * 100), data = na.omit(df)) +
+ggplot(aes(x = DebtToIncomeRatio.bin, y = BorrowerRate * 100), data = df) +
   geom_boxplot() +
   ylab("Borrower Rate Percentage") +
   theme(axis.text.x = element_text(angle = 45, hjust = 1))
 ```
 
 We can see that the BorrowerRate median increases the higher the DebtToIncomeRatio.
+Let's check the correlation between these 2 variables.
 
-Let's separate the borrower rate into bin as well.
+``` {r echo=FALSE, message=FALSE, warning=FALSE}
+cor(df$DebtToIncomeRatio, df$BorrowerRate, use = 'complete.obs')
+```
+
+The correlation is not all that significant, it show no or neglible relationship.
+This is contrary to my initial assumption. I assume the correlation will be positive.
+
+Seperating the debt to income ratio provide an interesting look into the data, let's separate the borrower rate into bin as well.
 
 ``` {r echo=FALSE, message=FALSE, warning=FALSE}
 df$BorrowerRate.bin <- with(df, cut(as.numeric(BorrowerRate), 
@@ -387,80 +579,234 @@ df$BorrowerRate.bin <- with(df, cut(as.numeric(BorrowerRate),
 df$BorrowerRate.bin <- factor(df$BorrowerRate.bin,
                              labels=c("0-10%",  "10-20%", "20-30%", "30-40%",
                                       "40-50%"))
-
-qplot(x = BorrowerRate.bin, data = na.omit(df))
-
-ggplot(aes(x = BorrowerRate.bin, y = AnnualIncome), data = na.omit(df)) +
-  geom_boxplot() +
-  scale_y_log10()
 ```
 
-Let's take a look at the relation of Term with other variables.
+Quick look at the result.
+
+``` {r echo=FALSE, message=FALSE, warning=FALSE}
+qplot(x = BorrowerRate.bin, data = na.omit(df))
+```
+
+Let's check the relationship with annual income.
+
+``` {r echo=FALSE, message=FALSE, warning=FALSE}
+ggplot(aes(x = BorrowerRate.bin, y = AnnualIncome), data = df) +
+  geom_boxplot() +
+  scale_y_continuous(
+    limits = c(0, quantile(df$AnnualIncome, 0.99, na.rm = TRUE)))
+
+ggplot(aes(x = BorrowerRate, y = AnnualIncome), data = df) +
+  geom_point(alpha = 0.05, position = "jitter") +
+  stat_quantile() +
+  scale_y_continuous(
+    limits = c(0, quantile(df$AnnualIncome, 0.99, na.rm = TRUE)))
+```
+
+These two plots are the same, the first one using the newly created BorrowerRate bins.
+Generally these plots shows the more you annual income the less is your borrower rate.
+
+Let's take a look at the correlation.
+
+``` {r echo=FALSE, message=FALSE, warning=FALSE}
+cor(df$AnnualIncome, df$BorrowerRate, use = 'complete.obs')
+```
+
+Again while the plot show some trend, the correlation between the two variables is negligible.
+
+Let's see the relationship of the borrower rate with other variables.
+
+``` {r echo=FALSE, message=FALSE, warning=FALSE}
+plot1 <- ggplot(aes(x = BankcardUtilization, y = BorrowerRate), data = df) +
+  geom_point(alpha = 0.005) +
+  stat_smooth(method = "lm")
+
+plot2 <- ggplot(aes(x = RevolvingCreditBalance, y = BorrowerRate), data = df) +
+  geom_point(alpha = 0.005) +
+  stat_smooth(method = "lm")
+
+plot3 <- ggplot(aes(x = DelinquenciesLast7Years, y = BorrowerRate), data = df) +
+  geom_point(alpha = 0.005) +
+  stat_smooth(method = "lm") 
+
+plot4 <- ggplot(aes(x = PublicRecordsLast10Years, y = BorrowerRate), data = df) +
+  geom_point(alpha = 0.005) +
+  stat_smooth(method = "lm")
+
+plot5 <- ggplot(aes(x = DaysWithCreditLine, y = BorrowerRate), data = df) +
+  geom_point(alpha = 0.005) +
+  stat_smooth(method = "lm")
+
+plot6 <- ggplot(aes(x = InquiriesLast6Months, y = BorrowerRate), data = df) +
+  geom_point(alpha = 0.005) +
+  stat_smooth(method = "lm")
+
+grid.arrange(plot1, plot2, plot3, plot4, plot5, plot6, nrow = 3, ncol = 2)
+```
+
+As BankcardUtilization, DeliquenciesLast7Years and PublicRecordsLast10Years increases so is the borrower rate. On the other hand the lower the RevolvingCreditBalance the lower the BorrowerRate.
+
+Let's check the correlation.
+
+Correlation between BorrowerRate with BankcardUtilization:
+``` {r echo=FALSE, message=FALSE, warning=FALSE}
+cor(df$BorrowerRate, df$BankcardUtilization, use = "complete.obs")
+```
+Correlation between BorrowerRate with RevolvingCreditBalance:
+``` {r echo=FALSE, message=FALSE, warning=FALSE}
+cor(df$BorrowerRate, df$RevolvingCreditBalance, use = "complete.obs")
+```
+Correlation between BorrowerRate with DelinquenciesLast7Years:
+``` {r echo=FALSE, message=FALSE, warning=FALSE}
+cor(df$BorrowerRate, df$DelinquenciesLast7Years, use = "complete.obs")
+```
+Correlation between BorrowerRate with PublicRecordsLast10Years:
+``` {r echo=FALSE, message=FALSE, warning=FALSE}
+cor(df$BorrowerRate, df$PublicRecordsLast10Years, use = "complete.obs")
+```
+Correlation between BorrowerRate with DaysWithCreditLine:
+``` {r echo=FALSE, message=FALSE, warning=FALSE}
+cor(df$BorrowerRate, df$DaysWithCreditLine, use = "complete.obs")
+```
+Correlation between BorrowerRate with InquiriesLast6Months:
+``` {r echo=FALSE, message=FALSE, warning=FALSE}
+cor(df$BorrowerRate, df$InquiriesLast6Months, use = "complete.obs")
+```
+
+BankcardUtilization has a weak positive relationship. The other factor, while showing position relationship for DelinquenciesLast7Years, PublicRecordsLast10Years and negative relationship for RevolvingCreditBalance, has a negligible relationship.
+ 
+Let's take a look at the relation of Term with other variables now.
+
+``` {r echo=FALSE, message=FALSE, warning=FALSE}
+ggplot(aes(y = LoanOriginalAmount, x = Term), data = df) +
+  geom_boxplot() +
+  scale_y_continuous(
+    limits = c(0, quantile(df$LoanOriginalAmount, 0.99, na.rm = TRUE)))
+```
+
+The median for the LoanOriginalAmount increases as the terms get longer.
+Let's verify this.
+
+``` {r echo=FALSE, message=FALSE, warning=FALSE}
+summary(subset(df, Term == 12)$LoanOriginalAmount)
+summary(subset(df, Term == 36)$LoanOriginalAmount)
+summary(subset(df, Term == 60)$LoanOriginalAmount)
+```
+
+And entry with term 60 has median of 11500,  5000 for 36 and 3500 for 12.
 
 ``` {r echo=FALSE, message=FALSE, warning=FALSE}
 ggplot(aes(x = Term, y = AnnualIncome), data = df) +
   geom_boxplot() +
-  scale_y_continuous(limits = c(0, quantile(df$AnnualIncome, 0.99, na.rm = TRUE)))
+  scale_y_continuous(
+    limits = c(0, quantile(df$AnnualIncome, 0.99, na.rm = TRUE)))
 
-ggplot(aes(x = AnnualIncome, fill=Term), data = df) +
-  geom_bar() +
-  scale_x_continuous(limits = c(0, quantile(df$AnnualIncome, 0.99, na.rm = TRUE)))
+summary(subset(df, Term == 12)$AnnualIncome)
+summary(subset(df, Term == 36)$AnnualIncome)
+summary(subset(df, Term == 60)$AnnualIncome)
+```
 
-ggplot(aes(y = LoanOriginalAmount, x = Term), data = df) +
+The median for 12 months term is 67000 higher then the 36 months term which is 54000.
+
+The relationship with DebtToIncomeRatio
+
+``` {r echo=FALSE, message=FALSE, warning=FALSE}
+ggplot(aes(y = DebtToIncomeRatio, x = Term), data = df) +
   geom_boxplot() +
-  scale_y_continuous(limits = c(0, quantile(df$LoanOriginalAmount, 0.99, na.rm = TRUE)))
+  scale_y_continuous(
+    limits = c(0, quantile(df$DebtToIncomeRatio, 0.99, na.rm = TRUE)))
 
+summary(subset(df, Term == 12)$DebtToIncomeRatio)
+summary(subset(df, Term == 36)$DebtToIncomeRatio)
+summary(subset(df, Term == 60)$DebtToIncomeRatio)
+```
+
+The median of the DebtToIncomeRatio increases as the terms goes up.
+For 60 months term the median is 0.23, for 36 months term the median is 0.21.
+
+Another look, this time using DebtToIncomeRatio.bin.
+
+``` {r echo=FALSE, message=FALSE, warning=FALSE}
 ggplot(aes(x = DebtToIncomeRatio.bin, fill = Term), data = df) +
-  geom_bar() +
+  geom_bar(position = "fill") +
   theme(axis.text.x = element_text(angle = 45, hjust = 1))
+```
 
+The term distribution actually is pretty even across the DebtToIncomeRatio.bin.
+Let's check the correlation.
+``` {r echo=FALSE, message=FALSE, warning=FALSE}
+cor(as.numeric(df$Term), df$DebtToIncomeRatio, use = "complete.obs")
+```
+
+We see that correlation number is neglible.
+
+Let's look at borrower rate vs term as well.
+
+``` {r echo=FALSE, message=FALSE, warning=FALSE}
 ggplot(aes(x = BorrowerRate.bin, fill = Term), data = df) +
-  geom_bar() +
+  geom_bar(position = "fill") +
   theme(axis.text.x = element_text(angle = 45, hjust = 1))
-
 ```
 
-Let's take a look at relationship between DeliquenciesLast7Years and PublicRecordsLast10Years.
+This is quite interesting borrower rate above 30% does not have 12 months Term.
 
 ``` {r echo=FALSE, message=FALSE, warning=FALSE}
-df$DelinquenciesLast7Years.bin <- with(df, cut(as.numeric(DelinquenciesLast7Years), 
-                                              seq(0, 100, 10)))
+ggplot(aes(x = Term, y = BorrowerRate), data = df) +
+  geom_boxplot() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+```
 
-ggplot(aes(x = DelinquenciesLast7Years.bin, y = BorrowerRate * 100), data = na.omit(df)) +
-  geom_boxplot() 
+Okay we see the same result from the boxplot.
+Let's look at the number.
 
-ggplot(aes(x = factor(PublicRecordsLast10Years), y = BorrowerRate * 100), data = df) +
+``` {r echo=FALSE, message=FALSE, warning=FALSE}
+summary(subset(df, Term == 12)$BorrowerRate)
+summary(subset(df, Term == 36)$BorrowerRate)
+summary(subset(df, Term == 60)$BorrowerRate)
+```
+
+The median BorrowerRate for 60 months term is 0.1870, the highest among the 3.
+
+Let's check ProsperRating relationship with DebtToIncomeRatio and BorrowerRate now.
+
+``` {r echo=FALSE, message=FALSE, warning=FALSE}
+ggplot(aes(x = ProsperRating, y = BorrowerRate), data = df) + 
   geom_boxplot()
-
 ```
 
-Let's check ProsperRating relationship with other variables.
+The better rating the lower the borrower rate. 
+Let's verify this.
 
 ``` {r echo=FALSE, message=FALSE, warning=FALSE}
-ggplot(aes(x = ProsperRating, y = ..count..), data = df) + 
-  geom_bar(aes(fill = Term), position = "dodge")
+RatingSummary <- function(rating) {
+  return(summary(subset(df, ProsperRating == rating)$BorrowerRate))
+}
 
-ggplot(aes(x = ProsperRating, y = ..count..), data = df) + 
-  geom_bar(aes(fill = BorrowerRate.bin), position = "dodge")
+RatingSummary('AA')
+RatingSummary('A')
+RatingSummary('B')
+RatingSummary('C')
+RatingSummary('D')
+RatingSummary('E')
+RatingSummary('HR')
 ```
 
-``` {r echo=FALSE, message=FALSE, warning=FALSE}
-ggplot(aes(x = ProsperRating, y = ..count..), data = df) + 
-  geom_bar(aes(fill = DebtToIncomeRatio.bin), position = "dodge")
+The borrower rate median get increases as we move to worse rating.
 
-# Another view
+Okay let's now check out the Debt to income ratio.
+
+``` {r echo=FALSE, message=FALSE, warning=FALSE}
 ggplot(aes(x = ProsperRating, y = ..count..), data = na.omit(df)) +
   geom_bar(aes(fill = DebtToIncomeRatio.bin), position = "fill")
 ```
 
 It seems at rating AA, the maximum DebToIncomeRatio is 50%.
-Let's inspect the data for this
+Let's inspect the data for this.
 
 ``` {r echo=FALSE, message=FALSE, warning=FALSE}
 summary(subset(df, ProsperRating == 'AA')$DebtToIncomeRatio.bin)
 ```
 
-So there are listing where the prosper rating is good but the debt to income ratio is more then 40%. 
+Our initial thought is not true. Even for AA rating we still have debt to income ratio > 50%. So there are listing where the prosper rating is good but the debt to income ratio is more then 50%. 
 
 # Bivariate Analysis
 
@@ -473,7 +819,6 @@ paint a clearer picture on the relationship between features.
 
 We can see for instance the borrower rate increases as debt to income ratio increases.
 The term seems to be related with loan original amount, the bigger the amount the longer the term. The borrower rate also shows a slight increase as the delinquincies in last 7 years goes up.
-
 
 
 *Did you observe any interesting relationships between the other features (not the main feature(s) of interest)?*
@@ -498,33 +843,58 @@ huge debt to income ratio can also have a prosper rating AA, not much 4 out of 5
 
 # Multivariate Plots Section
 
+Let's compare the debt to income ratio again, this time faceted by rating.
+
 ```{r echo=FALSE, message=FALSE, warning=FALSE, Multivariate_Plots}
+ggplot(aes(x = DebtToIncomeRatio, y = BorrowerRate), data = na.omit(df)) +
+  geom_point(alpha = 0.1, position = "jitter") +
+  stat_quantile(quantiles = c(0.5)) + 
+  facet_grid(~ProsperRating) +
+  scale_x_continuous(limits = c(0, 1)) +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+```
+
+From the bivariate analysis, the correlation between DebtToIncomeRatio is not actually that strong. This plot shows that. Most of the DebtToIncomeRatio is clustered under 1. But really the strong relationship is between the rating and borrower rate.
+In fact, on rating B, D and E, the median for borrower rate decrease as the debt to income ratio raises.
+
+Let's take a look at the distribution instead.
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
 ggplot(aes(x = BorrowerRate.bin, y = ..count..), data = na.omit(df)) +
   geom_bar(aes(fill = DebtToIncomeRatio.bin), position = "fill") +
   facet_grid(~ProsperRating) +
   theme(axis.text.x = element_text(angle = 45, hjust = 1))
+```
 
-ggplot(aes(x = BorrowerRate.bin, y = ..count..), data = na.omit(df)) +
-  geom_bar(aes(fill = Term), position = "fill") +
-  facet_grid(~ProsperRating) +
-  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+If we look at the plot above, we see that on rating AA, there is no borrower rate bin larger then 20%. So it does shows the distribution of borrower rate pretty good (better rating, better borrower rate). But if we look at the debt to income ratio bins, we see that they are all over the place. It is true that rating HR you got more borrower with high debt to income ratio, but we also have low debt to income ratio as well.
 
+Next, let's see if we can add another dimension by using ListingCreationDate.
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
 data <- separate(df, ListingCreationDate, c("Year", "Month", "Date"))
 data <- subset(data, ProsperRating != "")
 ggplot(aes(x = Year, fill = BorrowerRate.bin), data = na.omit(data)) +
   geom_bar(position = "fill") +
   facet_grid(~ProsperRating) +
   theme(axis.text.x = element_text(angle = 45, hjust = 1))
+```
 
+There is some different from year to year feature distribution within rating.
+For instance the the borrower rate distribution we can see that the borrower rate for rating AA in 2013 and 2014 almost all between 0-10%. For rating B we seems to have borrower rate of 20-30% in 2011 and 2012, but 10-20% in 2013 and 2014.
+
+Let's do the same with debt to income ratio.
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
 ggplot(aes(x = Year, fill = DebtToIncomeRatio.bin), data = na.omit(data)) +
   geom_histogram(position = "fill") +
   facet_grid(~ProsperRating) +
   theme(axis.text.x = element_text(angle = 45, hjust = 1))
 ```
 
-There is some different from year to year feature distribution within rating.
-For instance the the borrower rate distribution we can see that the borrower rate for rating
-AA in 2013 and 2014 almost all between 0-10%. For rating B we seems to have borrower rate of 20-30% in 2011 and 2012, but 10-20% in 2013 and 2014.
+The distribution shows interesting patterns. The debt to income ratio for each rating,
+seem to have allow higher debt to income ratio from year to year.
+
+
 
 ------
 
@@ -579,8 +949,17 @@ ggplot(aes(x = ProsperRating),data = grouped.df) +
 ### Description One
 
 This plot shows the effect of several factor on ProsperRating.
-For instance if a borrower have less bankcard utilization usually, he/she will get a better rating. On the other hand the longer you have credit line (DaysWithCreditLine) the better.
+The data for each factor is scaled, grouped by prosper rating and averaged.
+I use line plot to show how each factor trend for each ProsperRating.
+Since it is scaled, the point also show how far it is from the mean (the 0 line).
 
+Several things we can see:
+
+* If a borrower have less bankcard utilization usually, he/she will get a better rating.
+* This is also the case for debt to income ratio, deliquencies last 7 years, inquiries last 6 months and public record last 10 years.
+* On the other hand the longer you have credit line (DaysWithCreditLine) the better.
+* The more you have revolving credit balance the better your rating.
+* For HR rating the most important factor it seems are inquiries for the last 6 months and debt to income ratio, which makes sense, if a borrower is shopping around for credit that does not look good. Other factor seems not to be as important, for instance if we take bankcard utilization it is actually less then rating E or even D. This happens to other factor as well. Days with credit line for HR also shows this behavior it is actually better then R and D and even C.
 
 ### Plot Two
 ```{r echo=FALSE, message=FALSE, warning=FALSE, Plot_Two}
@@ -599,8 +978,9 @@ ggplot(aes(x = factor("BorrowerRate.bin"), fill = BorrowerRate.bin), data = data
 ### Description Two
 
 This plot shows the borrower rate distribution for borrower based on ProsperRating.
-If a borrower is rated AA, he/she will likely to have 0-10% borrower rate.
-
+If your rating is AA you will likely get 0-10% borrower rate, if your rating is A, B, or C, you will likely get 10-20%, for D and E it is between 20-30% and 30-40% for HR.
+Note while most of rating HR has high borrowing rate (30-40%), the are still a few who have
+10-20% borrower rate. 
 
 ### Plot Three
 ```{r echo=FALSE,  message=FALSE, warning=FALSE, Plot_Three}
@@ -623,9 +1003,14 @@ ggplot(aes(x = Year, fill = BorrowerRate.bin), data = data) +
 This plot is another look at plot 2 with added dimension of listing creation date.
 The plot shows the trend of borrower rate from 2009 and 2014 faceted by ProsperRating.
 We can see that if a borrower is rated AA in 2009 they can get 10-20% borrower rate.
-In 2013 and 2014, if you rated AA you will get 0-10% borrower rate.
-You are rated E in 2009 most borrower will get 30-40% rate, but in 2014 you can actually get
-20-30% borrower rate.
+In 2013 and 2014, if you are rated AA you will  get 0-10% borrower rate.
+If you are rated E in 2009 most borrower will get 30-40% rate,
+but in 2014 you can actually get 20-30% borrower rate.  The number of borrower with 20-30% borrower rate also increases significantly for rating E in 2012 onwards.
+For HR in 2009 and 2010, quite a number of borrower can still have a 10-20% borrower rate.
+but 2011 onward this no longer possible.
+
+Overall, it seems in 2009, the borrower rate is actually quite high. Even for rating AA a borrower can still get 20-30% borrower rate. If you are rating is E in 2009 you will likely to get 30-40% borrower rate. This no longer happen in 2014, In 2014, AA will most likey give you 0-10% borrower rate. A, B,  and C rating will get 10-20%, D and E most likely 20-30%.
+In 2014 for  HR rating you can still get 20-30% borrower rating, in contrast in 2011-2012 this will not be possible.
 
 ------
 
@@ -639,8 +1024,8 @@ To ease the exploration I have put several variables into "bins". Putting it int
 
 It is also much easier to show relationship based on ProsperRating then borrower rate. For instance if we faceted debt to income ratio with ProsperRating, it is easier to see that the lower your debt to income ratio the better is your rating. And then show the better you rating the better is you borrower rate.
 
-Even on this limited number of variables, there is a lot of thing that we can investigate further. 
-
+Even on this limited number of variables, there is a lot of thing that we can investigate further. One thing we can try to take a look as how to a borrower gets the ProsperRating.
+What are the make up of ProsperRating. I layout several factor but, those factors are based on Prosper UI[1]. In the data there are also information on borrower credit score. So it is interesting to see what kind of relationship exists between credit score and ProsperRating.
 
 # References
 
